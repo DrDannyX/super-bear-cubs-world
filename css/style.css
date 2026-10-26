@@ -1,0 +1,63 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #1a0e08;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+/* On-screen buttons, only shown on touch devices. */
+#touch[hidden] { display: none; }
+
+#touch .cluster {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 14px;
+}
+
+#touch .left { left: max(16px, env(safe-area-inset-left)); }
+#touch .right { right: max(16px, env(safe-area-inset-right)); }
+
+#touch button {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: bold 22px monospace;
+  touch-action: none;
+}
+
+#touch button:active { background: rgba(255, 255, 255, 0.35); }
+#touch .a { background: rgba(232, 65, 58, 0.55); }
+#touch .b { background: rgba(58, 142, 240, 0.55); margin-top: 28px; }
+
+#touch .start {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 16px;
+  font-size: 13px;
+}

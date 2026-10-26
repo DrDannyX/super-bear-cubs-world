@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Super Bear Cubs World</title>
+  <meta name="description" content="A colourful 8-bit platformer starring the Bear Cubs, A and P.">
+  <meta name="theme-color" content="#1a0e08">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='4' cy='4' r='3' fill='%238b5a2b'/><circle cx='12' cy='4' r='3' fill='%238b5a2b'/><circle cx='8' cy='9' r='6' fill='%238b5a2b'/><circle cx='8' cy='11' r='3' fill='%23f0cf9a'/><rect x='5' y='7' width='1' height='2' fill='%23000'/><rect x='10' y='7' width='1' height='2' fill='%23000'/></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game" aria-label="Super Bear Cubs World game"></canvas>
+
+  <div id="touch" hidden>
+    <div class="cluster left">
+      <button data-act="left" aria-label="Left">&#9664;</button>
+      <button data-act="right" aria-label="Right">&#9654;</button>
+    </div>
+    <div class="cluster right">
+      <button data-act="run" class="b" aria-label="Run">B</button>
+      <button data-act="jump" class="a" aria-label="Jump">A</button>
+    </div>
+    <button data-act="start" class="start" aria-label="Start / Pause">START</button>
+  </div>
+
+  <noscript>Super Bear Cubs World needs JavaScript turned on.</noscript>
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
