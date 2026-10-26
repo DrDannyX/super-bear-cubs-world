@@ -21,7 +21,7 @@ const CUB_KEYS = ['A', 'P'];
 
 const game = {
   state: 'title', t: 0, frame: 0,
-  cub: 'A', world: 0, lives: START_LIVES, claws: 0, totalClaws: 0, score: 0, time: 0,
+  cub: 'A', world: 0, lives: START_LIVES, diamonds: 0, totalDiamonds: 0, score: 0, time: 0,
   checkpoint: false, combo: 0, paused: false, menu: 0, toast: null, track: 0,
   hi: loadHi(),
 };
@@ -64,7 +64,7 @@ const isSolid = c => SOLID.has(c);
 function spawn(e) {
   const x = e.x * T, y = e.y * T;
   switch (e.type) {
-    case 'claw': return { type: 'claw', x: x + 3, y: y + 1, w: 10, h: 14 };
+    case 'diamond': return { type: 'diamond', x: x + 2, y: y + 3, w: 12, h: 10 };
     case 'beetle': return { type: 'beetle', x: x + 1, y: y + T - 12, w: 14, h: 12, vx: -0.5, vy: 0, mode: 'walk', active: false, t: 0 };
     case 'bee': return { type: 'bee', x: x + 2, y: y + 3, w: 12, h: 10, vx: -0.6, vy: 0, baseX: x + 2, baseY: y + 3, mode: 'walk', active: false, t: e.x * 13 };
   }
@@ -200,14 +200,14 @@ function getComputedColor(img) {
   return colorCache.get(img);
 }
 
-function collectClaw(x, y) {
-  game.claws++;
-  game.totalClaws++;
+function collectDiamond(x, y) {
+  game.diamonds++;
+  game.totalDiamonds++;
   addScore(100);
-  audio.sfx('claw');
-  sparkle(x, y);
-  if (game.claws >= 100) {
-    game.claws -= 100;
+  audio.sfx('diamond');
+  sparkle(x, y, 6, ['#ffffff', '#9ae8ff']);
+  if (game.diamonds >= 100) {
+    game.diamonds -= 100;
     oneUp(x, y);
   }
 }
@@ -228,7 +228,7 @@ function bumpTile(tx, ty) {
     lvl.grid[ty][tx] = 'U';
     lvl.bumps.set(key, 10);
     lvl.ents.push({ type: 'pop', x: tx * T + 2, y: ty * T - 14, vy: -5, t: 0 });
-    collectClaw(tx * T + 8, ty * T - 8);
+    collectDiamond(tx * T + 8, ty * T - 8);
   } else if (c === 'H' || c === 'R') {
     lvl.grid[ty][tx] = 'U';
     lvl.bumps.set(key, 10);
@@ -247,15 +247,15 @@ function bumpTile(tx, ty) {
   } else {
     audio.sfx('bump');
   }
-  // Knock out anything standing on the block, and grab claws sitting on it.
+  // Knock out anything standing on the block, and grab diamonds sitting on it.
   const above = { x: tx * T, y: (ty - 1) * T, w: T, h: T };
   for (const e of lvl.ents) {
     if ((e.type === 'beetle' || e.type === 'bee') && e.mode === 'walk' && overlap(e, above)) {
       knockOut(e, tx * T + 8);
       addScore(200, e.x, e.y);
-    } else if (e.type === 'claw' && overlap(e, above)) {
+    } else if (e.type === 'diamond' && overlap(e, above)) {
       e.dead = true;
-      collectClaw(e.x + 5, e.y + 7);
+      collectDiamond(e.x + 5, e.y + 7);
     }
   }
 }
@@ -383,10 +383,10 @@ function updateEnts() {
   const p = lvl.player;
   for (const e of lvl.ents) {
     switch (e.type) {
-      case 'claw':
+      case 'diamond':
         if (overlap(p, e)) {
           e.dead = true;
-          collectClaw(e.x + 5, e.y + 7);
+          collectDiamond(e.x + 5, e.y + 7);
         }
         break;
       case 'pop':
@@ -552,8 +552,8 @@ function playTrack(i) {
 function newGame() {
   game.world = startWorld;
   game.lives = START_LIVES;
-  game.claws = 0;
-  game.totalClaws = 0;
+  game.diamonds = 0;
+  game.totalDiamonds = 0;
   game.score = 0;
   game.checkpoint = false;
   setState('intro');
@@ -735,7 +735,7 @@ function step() {
         if (game.menu === 0) {
           game.lives = START_LIVES;
           game.score = 0;
-          game.claws = 0;
+          game.diamonds = 0;
           game.checkpoint = false;
           setState('intro');
         } else setState('title');
@@ -839,11 +839,11 @@ function drawEnt(e, cx) {
   const x = Math.round(e.x - cx), y = Math.round(e.y - CAM_Y);
   const items = SPR.items, en = SPR.enemies;
   switch (e.type) {
-    case 'claw':
-      ctx.drawImage(items.clawFrames[Math.floor(game.frame / 8) % 4], x - 1, y);
+    case 'diamond':
+      ctx.drawImage(items.diamondFrames[Math.floor(game.frame / 8) % 4], x, y);
       break;
     case 'pop':
-      ctx.drawImage(items.clawFrames[Math.floor(game.frame / 3) % 4], x, y);
+      ctx.drawImage(items.diamondFrames[Math.floor(game.frame / 3) % 4], x, y);
       break;
     case 'honey':
       ctx.drawImage(items.honey, x - 1, y - 2);
@@ -902,8 +902,8 @@ function drawHud() {
   ctx.fillRect(0, 0, VIEW_W, 16);
   ctx.drawImage(SPR.cubs[game.cub].head, 4, 3);
   drawText(ctx, '*' + game.lives, 22, 5);
-  ctx.drawImage(SPR.items.claw, 58, 1);
-  drawText(ctx, '*' + pad(game.claws, 2), 70, 5, { color: '#ffe14d' });
+  ctx.drawImage(SPR.items.diamond, 57, 3);
+  drawText(ctx, '*' + pad(game.diamonds, 2), 70, 5, { color: '#9ae8ff' });
   drawText(ctx, 'SCORE ' + pad(game.score, 6), 112, 5);
   drawText(ctx, 'WORLD ' + (game.world + 1), 214, 5);
   const low = game.time <= 60 && game.state === 'play';
@@ -1069,7 +1069,7 @@ function drawEnding() {
   drawGroundStrip('meadow', cx);
   drawText(ctx, 'HOORAY!', VIEW_W / 2, 22, { scale: 4, align: 'center', color: rainbow(6), shadow: '#2a1608' });
   drawText(ctx, 'THE BEAR CUBS MADE IT HOME!', VIEW_W / 2, 64, { align: 'center', color: '#ffffff', shadow: '#2a1608' });
-  drawText(ctx, 'BEAR CLAWS: ' + game.totalClaws, VIEW_W / 2, 82, { align: 'center', color: '#ffe14d', shadow: '#2a1608' });
+  drawText(ctx, 'DIAMONDS: ' + game.totalDiamonds, VIEW_W / 2, 82, { align: 'center', color: '#9ae8ff', shadow: '#2a1608' });
   drawText(ctx, 'SCORE: ' + game.score, VIEW_W / 2, 96, { align: 'center', color: '#ffffff', shadow: '#2a1608' });
   CUB_KEYS.forEach((key, i) => {
     const phase = game.frame * 0.15 + i * Math.PI;

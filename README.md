@@ -1,7 +1,7 @@
 # Super Bear Cubs World
 
 A colourful 8-bit platformer starring the Bear Cubs — **A** and **P**. Run, jump and stomp
-your way through three worlds collecting golden bear claws, then make it home to the den.
+your way through three worlds collecting sparkling diamonds, then make it home to the den.
 
 Everything (graphics, music, sound effects) is generated in code, so there are no assets
 to manage and no build step. It runs straight from the files in this folder.
@@ -23,7 +23,7 @@ Hold jump for a higher jump, and hold run to go faster. Stomp on beetles and bee
 ## The game
 
 - **Cubs:** A is the *super jumper*, P is the *speedy runner*.
-- **Bear claws:** collect 100 for an extra life. Paw blocks hide claws and power-ups.
+- **Diamonds:** collect 100 for an extra life. Paw blocks hide diamonds and power-ups.
 - **Honey pot:** gives your cub a honey crown — you can smash bricks and survive one hit.
 - **Super berry:** a few seconds of invincibility (and faster music!).
 - **Red mushrooms:** bounce pads. Hold jump to bounce higher.

@@ -97,7 +97,7 @@ export function addOutline(src, color) {
   return c;
 }
 
-// Squash a sprite horizontally (used for the spinning bear claw).
+// Squash a sprite horizontally (used for the spinning diamond).
 export function squashX(src, scale, outW) {
   const w = Math.max(1, Math.round(src.width * scale));
   const c = makeCanvas(outW, src.height);

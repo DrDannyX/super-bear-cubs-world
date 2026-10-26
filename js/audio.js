@@ -419,7 +419,7 @@ class Chip {
       notes.forEach((n, i) => this.tone(t + i * step, hz(midiOf(n)), step * 1.1, wave, vol, out));
     switch (name) {
       case 'jump': this.tone(t, 280, 0.16, 'pulse25', 0.13, out, 720); break;
-      case 'claw':
+      case 'diamond':
         this.tone(t, hz(midiOf('B5')), 0.06, 'pulse50', 0.1, out);
         this.tone(t + 0.06, hz(midiOf('E6')), 0.28, 'pulse50', 0.1, out);
         break;

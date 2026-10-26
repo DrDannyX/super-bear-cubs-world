@@ -1,7 +1,7 @@
 // Level designs. Tiles:
-//   # ground   B brick   ? claw block   H honey block   R berry block   U used block
+//   # ground   B brick   ? diamond block   H honey block   R berry block   U used block
 //   S stone    = one-way platform   ^ spikes   [ ] log (left/right half)   J bouncy mushroom
-// Entities placed with row(): o bear claw, e beetle, z bee
+// Entities placed with row(): o diamond, e beetle, z bee
 import { ROWS } from './constants.js';
 
 const GROUND = 12; // top row of the ground
@@ -29,7 +29,7 @@ class Builder {
   row(x, y, str) {
     [...str].forEach((c, i) => {
       if (c === ' ') return;
-      if (c === 'o') this.ents.push({ type: 'claw', x: x + i, y });
+      if (c === 'o') this.ents.push({ type: 'diamond', x: x + i, y });
       else if (c === 'e') this.ents.push({ type: 'beetle', x: x + i, y });
       else if (c === 'z') this.ents.push({ type: 'bee', x: x + i, y });
       else this.set(x + i, y, c);
@@ -61,12 +61,12 @@ class Builder {
     this.set(x, GROUND - 1, 'J');
     return this;
   }
-  // A parabola of claws, handy over gaps.
+  // A parabola of diamonds, handy over gaps.
   arc(x0, x1, top) {
     const mid = (x0 + x1) / 2, half = (x1 - x0) / 2 || 1;
     for (let x = x0; x <= x1; x++) {
       const k = (x - mid) / half;
-      this.ents.push({ type: 'claw', x, y: Math.round(top + k * k * 3) });
+      this.ents.push({ type: 'diamond', x, y: Math.round(top + k * k * 3) });
     }
     return this;
   }

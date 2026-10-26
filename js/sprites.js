@@ -75,20 +75,17 @@ function buildCub(cub) {
 
 // ---------------------------------------------------------------- items
 
-const CLAW_ROWS = [
-  '..kkkk......',
-  '.kwwyyk.....',
-  'kwyyyyyk....',
-  'kwyyyyyyk...',
-  'kyyyyyyyyk..',
-  '.kkyyYYyyyk.',
-  '...kkYYyyyk.',
-  '.....kYyyyk.',
-  '.....kYYyyk.',
-  '......kYyyk.',
-  '......kYyk..',
-  '......kYyk..',
-  '.......kk...',
+const DIAMOND_ROWS = [
+  '...kkkkkk...',
+  '..kwcwcwCCk.',
+  '.kwcwcwcCCCk',
+  'kkkkkkkkkkkk',
+  'kwcccccCCCdk',
+  '.kwccccCCdk.',
+  '..kwcccCdk..',
+  '...kwccdk...',
+  '....kwdk....',
+  '.....kk.....',
 ];
 
 const HONEY_ROWS = [
@@ -135,8 +132,8 @@ function centered(src, w, h) {
 }
 
 function buildItems() {
-  const claw = fromRows(CLAW_ROWS, { k: '#5a3a00', w: '#fffbe0', y: '#ffd23a', Y: '#e0960f' });
-  const clawFrames = [1, 0.6, 0.2, 0.6].map(s => squashX(claw, s, 12));
+  const diamond = fromRows(DIAMOND_ROWS, { k: '#1a3a6a', w: '#ffffff', c: '#9ae8ff', C: '#40c0f0', d: '#1a80c8' });
+  const diamondFrames = [1, 0.6, 0.2, 0.6].map(s => squashX(diamond, s, 12));
   const honey = centered(fromRows(HONEY_ROWS, {
     k: '#4a2400', R: '#e8413a', W: '#ffffff', y: '#ffb81c', Y: '#d07800', w: '#fff3b0',
   }), 16, 16);
@@ -144,7 +141,7 @@ function buildItems() {
     k: '#2a0a3a', m: '#c04af0', M: '#6a1aa0', w: '#ffffff', g: '#6fe36f', G: '#2f8e3f',
   }), 16, 16);
   const crown = addOutline(centered(fromRows(CROWN_ROWS, { y: '#ffd23a', r: '#e8413a' }), 9, 7), '#5a3a00');
-  return { claw, clawFrames, honey, berry, crown };
+  return { diamond, diamondFrames, honey, berry, crown };
 }
 
 // ---------------------------------------------------------------- enemies
