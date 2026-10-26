@@ -14,6 +14,7 @@ const hz = midi => 440 * Math.pow(2, (midi - 69) / 12);
 const CHORDS = {
   C: ['C', 'E', 'G'], Am: ['A', 'C', 'E'], F: ['F', 'A', 'C'], G: ['G', 'B', 'D'],
   Dm: ['D', 'F', 'A'], E: ['E', 'G#', 'B'], Bb: ['Bb', 'D', 'F'], Em: ['E', 'G', 'B'],
+  D: ['D', 'F#', 'A'], A: ['A', 'C#', 'E'],
 };
 
 // Chord tones as ascending midi numbers starting at `oct`.
@@ -42,6 +43,8 @@ const DRUMS = {
   rock: 'k . h . s . h . k k h . s . h h',
   soft: 'k . . . h . . . k . . . h . h .',
   gallop: 'k . h h s . h h k . h h s . s h',
+  fast: 'k h s h k h s h k h s h k k s h',
+  gentle: 'k . . . . . h . . . . . h . . .',
 };
 
 const SONGS = {
@@ -85,7 +88,82 @@ const SONGS = {
            Bb5 . A5 . G5 . F5 . D5 . F5 . Bb5 . D6 .
            C6 - - . E5 . G5 . C6 . . . . . . .`,
   },
+  // Plays while the cub is invincible after eating a super berry.
+  berry: {
+    bpm: 184, chords: 'C F G C Am F G G', drums: 'fast',
+    lead: `C6 . G5 . C6 . E6 . D6 . C6 . G5 . E5 .
+           F5 . A5 . C6 . F6 . E6 . C6 . A5 . F5 .
+           G5 . B5 . D6 . G6 . F6 . D6 . B5 . G5 .
+           C6 . E6 . G6 - - . E6 . C6 - - . . .
+           A5 . C6 . E6 . A6 . G6 . E6 . C6 . A5 .
+           F5 . A5 . C6 . A5 . G5 . F5 . E5 . F5 .
+           G5 . G5 . A5 . B5 . C6 . D6 . E6 . F6 .
+           G6 - - . . . G5 . G6 - - . . . . .`,
+  },
+  // Loops on the ending screen.
+  home: {
+    bpm: 112, chords: 'F C Dm Bb F C Bb C', drums: 'soft',
+    lead: `A5 - - . G5 . F5 - - . C5 . F5 . A5 .
+           G5 - - . F5 . E5 - - . C5 . E5 . G5 .
+           F5 - - . E5 . D5 - - . A4 . D5 . F5 .
+           D5 - - . C5 . Bb4 - - - - - . . . .
+           A5 - - . C6 . A5 - - . F5 . A5 . C6 .
+           G5 - - . E5 . C5 - - . E5 . G5 . C6 .
+           D6 - - . C6 . Bb5 - - . F5 . D5 . Bb5 .
+           C6 - - - - - - - E5 - - - G5 - - .`,
+  },
+  // Bonus tracks for the music box.
+  picnic: {
+    bpm: 156, chords: 'G C G D G C D G', drums: 'gallop',
+    lead: `D5 . G5 . G5 . B5 . D6 . B5 . G5 . . .
+           E5 . G5 . C6 . E6 . D6 . C6 . G5 . . .
+           B5 . G5 . D5 . G5 . B5 . D6 . G6 . . .
+           F#6 - - . E6 . D6 . A5 . F#5 . A5 . . .
+           G5 G5 . G5 B5 . D6 . B5 . G5 . D5 . G5 .
+           C6 C6 . C6 E6 . G6 . E6 . C6 . G5 . E5 .
+           D6 . C6 . B5 . A5 . F#5 . A5 . D6 . F#6 .
+           G6 - - . D6 . B5 . G5 - - . . . . .`,
+  },
+  chase: {
+    bpm: 172, chords: 'Dm Dm Bb C Dm Dm Bb A', drums: 'rock',
+    lead: `D5 D5 F5 D5 A5 . D5 . D6 . C6 . A5 . F5 .
+           D5 D5 F5 D5 A5 . D5 . G5 F5 E5 F5 D5 . . .
+           Bb5 . A5 . G5 . F5 . D5 . F5 . Bb5 . D6 .
+           C6 . Bb5 . A5 . G5 . E5 . G5 . C6 . E6 .
+           F6 . E6 . D6 . A5 . F5 . A5 . D6 . F6 .
+           E6 . D6 . C#6 . D6 . A5 - - . . . . .
+           Bb5 . D6 . F6 . D6 . Bb5 . F5 . D5 . F5 .
+           E5 . A5 . C#6 . E6 . A6 - - . E6 . C#6 .`,
+  },
+  lullaby: {
+    bpm: 96, chords: 'Am F C G Am F E E', drums: 'gentle',
+    lead: `E5 - - - A5 - - - C6 - - - B5 - A5 -
+           A5 - - - G5 - F5 - E5 - - - - - - -
+           E5 - - - G5 - - - C6 - - - D6 - E6 -
+           D6 - - - B5 - - - G5 - - - - - - -
+           C6 - - - B5 - A5 - E5 - - - A5 - B5 -
+           C6 - - - A5 - - - F5 - - - A5 - C6 -
+           B5 - - - G#5 - - - E5 - - - G#5 - B5 -
+           E6 - - - - - - - . . . . . . . .`,
+  },
 };
+
+// Everything the music box can play, in order.
+export const TRACKS = [
+  { name: 'TITLE THEME', song: 'title' },
+  { name: 'SUNNY MEADOW', song: 'meadow' },
+  { name: 'HONEYCOMB CAVES', song: 'caves' },
+  { name: 'SNOWY PEAKS', song: 'snow' },
+  { name: 'SUPER BERRY', song: 'berry' },
+  { name: 'HOME SWEET DEN', song: 'home' },
+  { name: 'PICNIC PARTY', song: 'picnic' },
+  { name: 'BUZZY BEE CHASE', song: 'chase' },
+  { name: 'MOONLIGHT LULLABY', song: 'lullaby' },
+  { name: 'LEVEL CLEAR', jingle: 'clear' },
+  { name: 'HOORAY!', jingle: 'ending' },
+  { name: 'OOPS!', jingle: 'die' },
+  { name: 'GAME OVER', jingle: 'gameover' },
+];
 
 const JINGLES = {
   clear: { bpm: 200, lead: 'C5 E5 G5 C6 - . G5 C6 E6 - - - . . . . D6 - E6 - F6 - G6 - - - - - - - . .', bass: 'C3 - - - - - - - E3 - - - - - - - G3 - - - - - - - C3 - - - - - - - . .' },
@@ -96,6 +174,10 @@ const JINGLES = {
 
 function tokens(str) {
   return str.trim().split(/\s+/);
+}
+
+export function songBars() {
+  return Object.fromEntries(Object.entries(SONGS).map(([k, v]) => [k, [tokens(v.lead).length / 16, v.chords.split(' ').length]]));
 }
 
 function compileSong(s) {
@@ -134,6 +216,7 @@ class Chip {
     this.tempo = 1;
     this.paused = false;
     this.compiled = {};
+    this.events = [];
   }
 
   // Call from inside a user gesture (tap, click or key press). On iOS the
@@ -276,6 +359,19 @@ class Chip {
     this.song.length = Math.max(...data.channels.map(c => c.steps.length));
   }
 
+  // Remember recent notes so the music box can draw a visualiser.
+  note(t, kind, value) {
+    this.events.push({ t, kind, value });
+    if (this.events.length > 64) this.events.shift();
+  }
+
+  // Notes that have actually sounded within the last `window` seconds.
+  recent(window = 0.5) {
+    if (!this.ctx) return [];
+    const now = this.ctx.currentTime;
+    return this.events.filter(e => e.t <= now && now - e.t < window).map(e => ({ ...e, age: (now - e.t) / window }));
+  }
+
   stopMusic() {
     this.song = null;
     this.pending = null;
@@ -295,7 +391,10 @@ class Chip {
         const i = s.step % ch.steps.length;
         const tok = ch.steps[i];
         if (ch.kind === 'drums') {
-          if (tok !== '.') this.drum(tok, s.next);
+          if (tok !== '.') {
+            this.drum(tok, s.next);
+            this.note(s.next, ch.kind, tok);
+          }
           continue;
         }
         const m = midiOf(tok);
@@ -304,6 +403,7 @@ class Chip {
         while (ch.steps[(i + hold) % ch.steps.length] === '-' && hold < 16) hold++;
         const v = VOICE[ch.kind];
         this.tone(s.next, hz(m), hold * stepDur * 0.92, v.wave, v.vol, this.music);
+        this.note(s.next, ch.kind, m);
       }
       s.step++;
       s.next += stepDur;

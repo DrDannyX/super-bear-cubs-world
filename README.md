@@ -27,6 +27,7 @@ Hold jump for a higher jump, and hold run to go faster. Stomp on beetles and bee
 - **Honey pot:** gives your cub a honey crown — you can smash bricks and survive one hit.
 - **Super berry:** a few seconds of invincibility (and faster music!).
 - **Red mushrooms:** bounce pads. Hold jump to bounce higher.
+- **Music box:** press B (X on keyboard) on the title screen to listen to every tune.
 - **Worlds:** 1 Sunny Meadow, 2 Honeycomb Caves, 3 Snowy Peaks — each has a checkpoint flag halfway.
 
 ## Play locally
@@ -38,7 +39,8 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-Testing shortcut: `http://localhost:8000/?play&world=2&cub=P` jumps straight into a world.
+Testing shortcuts: `?play&world=2&cub=P` jumps straight into a world, and `?debug` shows the
+audio state and any script errors on screen (useful on phones).
 
 ## Deploy to GitHub Pages
 

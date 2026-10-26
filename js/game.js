@@ -1,7 +1,7 @@
 import { TILE as T, VIEW_W, VIEW_H, ROWS, CAM_Y } from './constants.js';
 import { SPR, CUBS, LAYER_W, buildSprites } from './sprites.js';
 import { drawText } from './font.js';
-import { audio } from './audio.js';
+import { audio, TRACKS } from './audio.js';
 import { input, touch } from './input.js';
 import { LEVELS } from './levels.js';
 
@@ -22,7 +22,7 @@ const CUB_KEYS = ['A', 'P'];
 const game = {
   state: 'title', t: 0, frame: 0,
   cub: 'A', world: 0, lives: START_LIVES, claws: 0, totalClaws: 0, score: 0, time: 0,
-  checkpoint: false, combo: 0, paused: false, menu: 0, toast: null,
+  checkpoint: false, combo: 0, paused: false, menu: 0, toast: null, track: 0,
   hi: loadHi(),
 };
 let lvl = null;
@@ -365,7 +365,7 @@ function updatePlayer() {
   if (p.star > 0) {
     p.star--;
     if (game.frame % 4 === 0) sparkle(p.x + Math.random() * p.w, p.y + Math.random() * p.h, 2, RAINBOW);
-    if (p.star === 0) audio.tempo = 1;
+    if (p.star === 0 && game.state === 'play') audio.playSong(lvl.def.music);
   }
 
   if (!p.onGround) p.frame = 'jump';
@@ -448,7 +448,7 @@ function updateItem(e, p) {
     } else {
       p.star = 600;
       audio.sfx('berry');
-      audio.tempo = 1.35;
+      audio.playSong('berry');
     }
   }
 }
@@ -541,6 +541,14 @@ function updateCamera(snap) {
 
 // ------------------------------------------------------------------ game flow
 
+function playTrack(i) {
+  game.track = i;
+  const t = TRACKS[i];
+  audio.stopMusic();
+  if (t.song) audio.playSong(t.song);
+  else audio.playJingle(t.jingle);
+}
+
 function newGame() {
   game.world = startWorld;
   game.lives = START_LIVES;
@@ -569,7 +577,6 @@ function startClear() {
   p.vy = 0;
   p.facing = 1;
   p.star = 0;
-  audio.tempo = 1;
   audio.stopMusic();
   audio.sfx('flag');
 }
@@ -649,6 +656,20 @@ function step() {
       if (confirm && game.t > 20) {
         audio.sfx('power');
         newGame();
+      } else if (input.pressed('run') && game.t > 20) {
+        setState('musicbox');
+        playTrack(game.track);
+      }
+      break;
+    }
+    case 'musicbox': {
+      const n = TRACKS.length;
+      if (input.pressed('left')) playTrack((game.track + n - 1) % n);
+      else if (input.pressed('right')) playTrack((game.track + 1) % n);
+      else if (input.pressed('jump')) playTrack(game.track);
+      else if ((input.pressed('run') || input.pressed('start')) && game.t > 10) {
+        audio.stopMusic();
+        setState('title');
       }
       break;
     }
@@ -721,6 +742,8 @@ function step() {
       }
       break;
     case 'ending':
+      // After the "hooray" jingle, settle into a looping tune.
+      if (game.t > 90 && !audio.song && !audio.pending) audio.playSong('home');
       if (confirm && game.t > 120) setState('title');
       break;
   }
@@ -955,6 +978,62 @@ function drawTitle() {
     drawText(ctx, hint, VIEW_W / 2, 204, { align: 'center', color: '#ffe0a0', shadow: '#2a1608' });
   }
   drawText(ctx, 'HI ' + pad(game.hi, 6), VIEW_W - 6, 4, { align: 'right', color: '#ffffff', shadow: '#2a1608' });
+  drawText(ctx, (game.touch ? 'B' : 'X/B') + ': MUSIC BOX', VIEW_W - 6, 14, { align: 'right', color: '#ffe14d', shadow: '#2a1608' });
+  if (!audio.ready) {
+    drawText(ctx, game.touch ? 'TAP ANYWHERE FOR SOUND' : 'CLICK OR PRESS A KEY FOR SOUND', 6, 4, { color: '#ffffff', shadow: '#2a1608' });
+  }
+}
+
+function drawMusicBox() {
+  const cx = game.frame * 0.4;
+  drawBackground('snow', cx);
+  drawGroundStrip('snow', cx);
+  drawText(ctx, 'MUSIC BOX', VIEW_W / 2, 8, { scale: 3, align: 'center', color: rainbow(8), shadow: '#2a1608' });
+
+  const track = TRACKS[game.track];
+  const n = TRACKS.length;
+  drawText(ctx, '<', 40, 38, { scale: 2, color: '#ffffff', shadow: '#2a1608' });
+  drawText(ctx, '>', VIEW_W - 50, 38, { scale: 2, color: '#ffffff', shadow: '#2a1608' });
+  drawText(ctx, track.name, VIEW_W / 2, 38, { scale: 2, align: 'center', color: '#ffffff', shadow: '#2a1608' });
+  const finished = !audio.song && !audio.pending;
+  const sub = 'TRACK ' + (game.track + 1) + ' OF ' + n + (finished ? '  -  PRESS A TO PLAY' : '');
+  drawText(ctx, sub, VIEW_W / 2, 58, { align: 'center', color: '#ffe14d', shadow: '#2a1608' });
+
+  // Visualiser: one rainbow column per note of the scale, lit by what's playing.
+  const heights = new Array(12).fill(0);
+  let kick = 0, snare = 0;
+  for (const e of audio.recent(0.45)) {
+    const fresh = 1 - e.age;
+    if (e.kind === 'drums') {
+      if (e.value === 'k') kick = Math.max(kick, fresh);
+      if (e.value === 's') snare = Math.max(snare, fresh);
+    } else {
+      const weight = e.kind === 'lead' ? 1 : e.kind === 'bass' ? 0.75 : 0.5;
+      const col = e.value % 12;
+      heights[col] = Math.max(heights[col], fresh * weight);
+    }
+  }
+  const colW = 16, gap = 4, left = Math.round(VIEW_W / 2 - (12 * (colW + gap) - gap) / 2), base = 156;
+  heights.forEach((h, i) => {
+    const blocks = Math.round(h * 14);
+    const x = left + i * (colW + gap);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x, base - 2, colW, 2);
+    ctx.fillStyle = RAINBOW[i % RAINBOW.length];
+    for (let b = 0; b < blocks; b++) ctx.fillRect(x, base - 6 - b * 6, colW, 4);
+  });
+  if (snare > 0.6) {
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  }
+
+  // The cubs dance to the kick drum.
+  const hop = Math.round(kick * 10);
+  drawCub('A', hop > 2 ? 'jump' : 'stand', 1, 16, GROUND_Y - CAM_Y - 40 - hop, { scale: 2 });
+  drawCub('P', hop > 2 ? 'jump' : 'stand', -1, VIEW_W - 48, GROUND_Y - CAM_Y - 40 - hop, { scale: 2 });
+
+  const hint = game.touch ? '< > CHOOSE   A PLAY   B BACK' : 'ARROWS CHOOSE   Z PLAY   X BACK';
+  drawText(ctx, hint, VIEW_W / 2, 166, { align: 'center', color: '#ffffff', shadow: '#2a1608' });
   if (!audio.ready) {
     drawText(ctx, game.touch ? 'TAP ANYWHERE FOR SOUND' : 'CLICK OR PRESS A KEY FOR SOUND', 6, 4, { color: '#ffffff', shadow: '#2a1608' });
   }
@@ -1012,6 +1091,7 @@ function render() {
   ctx.imageSmoothingEnabled = false;
   switch (game.state) {
     case 'title': drawTitle(); break;
+    case 'musicbox': drawMusicBox(); break;
     case 'intro': drawIntro(); break;
     case 'gameover': drawGameOver(); break;
     case 'ending': drawEnding(); break;
