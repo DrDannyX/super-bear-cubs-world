@@ -64,6 +64,16 @@ body {
   font-size: 13px;
 }
 
+#touch .sound {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  width: 44px;
+  height: 36px;
+  border-radius: 18px;
+  font-size: 18px;
+}
+
 /* Sideways, the top of the screen is the HUD, so START sits at the bottom. */
 @media (orientation: landscape) {
   #touch .start { top: auto; bottom: max(10px, env(safe-area-inset-bottom)); }

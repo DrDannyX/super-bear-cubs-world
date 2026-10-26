@@ -632,9 +632,11 @@ function step() {
   game.frame++;
   game.t++;
   if (game.toast && --game.toast.t <= 0) game.toast = null;
-  if (input.pressed('mute')) toast(audio.toggleMute() ? 'SOUND OFF' : 'SOUND ON');
-  // Gamepad buttons don't count as a user gesture everywhere, but try anyway.
-  if (input.anyPressed()) audio.unlock();
+  if (input.pressed('mute')) {
+    // If sound hasn't started yet, the tap that started it means "sound on".
+    if (!audio.ready && !audio.muted) toast('SOUND ON');
+    else toast(audio.toggleMute() ? 'SOUND OFF' : 'SOUND ON');
+  }
 
   const confirm = input.pressed('start') || input.pressed('jump');
   switch (game.state) {
@@ -1016,7 +1018,19 @@ function render() {
     default: drawWorld();
   }
   if (game.toast) {
-    drawText(ctx, game.toast.text, VIEW_W / 2, VIEW_H - 14, { align: 'center', color: '#ffe14d' });
+    const w = game.toast.text.length * 6 + 10;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(Math.round(VIEW_W / 2 - w / 2), 19, w, 13);
+    drawText(ctx, game.toast.text, VIEW_W / 2, 22, { align: 'center', color: '#ffe14d' });
+  }
+  if (DEBUG) {
+    const a = audio.ctx;
+    const info = 'AUDIO ' + (a ? a.state : 'NOT STARTED') + (audio.muted ? ' MUTED' : '') +
+      ' SONG ' + (audio.song ? audio.song.name : audio.pending || '-') + (a ? ' ' + a.sampleRate : '');
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 34, VIEW_W, 22);
+    drawText(ctx, info, 4, 36, { color: '#6fe35f', shadow: null });
+    if (lastError) drawText(ctx, lastError.slice(0, 62), 4, 46, { color: '#ff5a5a', shadow: null });
   }
 }
 
@@ -1051,8 +1065,15 @@ function setupTouch() {
   }
 }
 
-// Optional URL params for testing: ?world=2&cub=P&play
+// Optional URL params for testing: ?world=2&cub=P&play, and ?debug to show
+// the audio state and any script error on screen (handy on phones).
 const params = new URLSearchParams(location.search);
+const DEBUG = params.has('debug');
+let lastError = '';
+if (DEBUG) {
+  window.addEventListener('error', e => { lastError = String(e.message); });
+  window.addEventListener('unhandledrejection', e => { lastError = String(e.reason); });
+}
 const startWorld = Math.max(0, Math.min(LEVELS.length - 1, (+params.get('world') || 1) - 1));
 
 function boot() {
@@ -1067,10 +1088,7 @@ function boot() {
     window.addEventListener(ev, () => audio.unlock(), { passive: true, capture: true });
   }
   // Coming back to the tab (or iOS ending an interruption) may need a nudge.
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) audio.unlock(); });
-  // Queue the title music now; it starts the moment sound is allowed
-  // (straight away where the browser permits autoplay).
-  audio.init();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) audio.resume(); });
   input.onGamepadConnected(() => toast('CONTROLLER CONNECTED!'));
   // Handy for poking at the game from the browser console.
   window.bearCubs = { game, get level() { return lvl; } };

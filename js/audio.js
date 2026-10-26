@@ -118,6 +118,8 @@ function compileJingle(j) {
   return { bpm: j.bpm, channels };
 }
 
+const MASTER_VOL = 0.9;
+
 const VOICE = {
   lead: { wave: 'pulse25', vol: 0.11 },
   arp: { wave: 'pulse12', vol: 0.035 },
@@ -134,51 +136,63 @@ class Chip {
     this.compiled = {};
   }
 
-  // Create the audio graph. Safe to call any time: until the player taps or
-  // presses a key the browser keeps it suspended, and queued music waits.
-  init() {
+  // Call from inside a user gesture (tap, click or key press). On iOS the
+  // context is only reliably allowed to start if it is created, resumed and
+  // made to play something during a gesture the browser accepts, and Safari's
+  // context can also be 'interrupted' (after a call or app switch), not just
+  // 'suspended'. So keep trying on every gesture until it is running.
+  // Safari's Web Audio follows the iPhone's silent switch by default.
+  unlock() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return false;
-      // 'ambient' tells Safari to follow the iPhone's silent switch.
-      if (navigator.audioSession) {
-        try { navigator.audioSession.type = 'ambient'; } catch { /* unsupported */ }
-      }
-      this.ctx = new AC();
-      const c = this.ctx;
-      this.master = c.createGain();
-      this.master.gain.value = this.muted ? 0 : 0.5;
-      this.master.connect(c.destination);
-      this.music = c.createGain();
-      this.music.gain.value = 0.7;
-      this.music.connect(this.master);
-      this.sfxBus = c.createGain();
-      this.sfxBus.gain.value = 0.9;
-      this.sfxBus.connect(this.master);
-      this.waves = { pulse12: this.pulse(0.125), pulse25: this.pulse(0.25), pulse50: this.pulse(0.5) };
-      const len = c.sampleRate;
-      this.noise = c.createBuffer(1, len, c.sampleRate);
-      const d = this.noise.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-      setInterval(() => this.schedule(), 25);
+      if (!AC) return;
+      this.build(new AC());
     }
-    return true;
-  }
-
-  // Call from inside a user gesture. iOS also needs a sound started during the
-  // gesture, and its context can be 'interrupted' (not just 'suspended').
-  unlock() {
-    if (!this.init()) return;
     if (this.ctx.state !== 'running') {
       const p = this.ctx.resume();
       if (p && p.catch) p.catch(() => {});
-    }
-    if (!this.primed) {
       const src = this.ctx.createBufferSource();
       src.buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
       src.connect(this.ctx.destination);
       src.start(0);
-      this.primed = true;
+    }
+  }
+
+  // Outside a gesture (e.g. returning to the tab) we can only ask nicely.
+  resume() {
+    if (this.ctx && this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+  }
+
+  build(c) {
+    this.ctx = c;
+    // A limiter lets the mix be loud enough for phone speakers without clipping.
+    const limiter = c.createDynamicsCompressor();
+    limiter.threshold.value = -12;
+    limiter.knee.value = 6;
+    limiter.ratio.value = 12;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.15;
+    limiter.connect(c.destination);
+    this.master = c.createGain();
+    this.master.gain.value = this.muted ? 0 : MASTER_VOL;
+    this.master.connect(limiter);
+    this.music = c.createGain();
+    this.music.gain.value = 0.7;
+    this.music.connect(this.master);
+    this.sfxBus = c.createGain();
+    this.sfxBus.gain.value = 0.9;
+    this.sfxBus.connect(this.master);
+    this.waves = { pulse12: this.pulse(0.125), pulse25: this.pulse(0.25), pulse50: this.pulse(0.5) };
+    const len = c.sampleRate;
+    this.noise = c.createBuffer(1, len, c.sampleRate);
+    const d = this.noise.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    setInterval(() => this.schedule(), 25);
+    // Start whatever music was asked for before sound was allowed.
+    if (this.pending) {
+      const name = this.pending;
+      this.pending = null;
+      this.playSong(name);
     }
   }
 
@@ -197,7 +211,7 @@ class Chip {
 
   toggleMute() {
     this.muted = !this.muted;
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.5;
+    if (this.master) this.master.gain.value = this.muted ? 0 : MASTER_VOL;
     return this.muted;
   }
 
@@ -242,14 +256,17 @@ class Chip {
   // ---- music
 
   playSong(name) {
-    if (!this.init()) return;
+    if (!this.ctx) {
+      this.pending = name;
+      return;
+    }
     if (this.song && this.song.name === name && this.song.loop) return;
     if (!this.compiled[name]) this.compiled[name] = compileSong(SONGS[name]);
     this.start(name, this.compiled[name], true);
   }
 
   playJingle(name) {
-    if (!this.init()) return;
+    if (!this.ctx) return;
     this.start(name, compileJingle(JINGLES[name]), false);
   }
 
@@ -261,6 +278,7 @@ class Chip {
 
   stopMusic() {
     this.song = null;
+    this.pending = null;
   }
 
   schedule() {
