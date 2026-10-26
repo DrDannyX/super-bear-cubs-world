@@ -6,6 +6,8 @@ html, body {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -46,7 +48,7 @@ body {
   touch-action: none;
 }
 
-#touch button:active { background: rgba(255, 255, 255, 0.35); }
+#touch button.down { background: rgba(255, 255, 255, 0.45); }
 #touch .a { background: rgba(232, 65, 58, 0.55); }
 #touch .b { background: rgba(58, 142, 240, 0.55); margin-top: 28px; }
 
@@ -60,4 +62,23 @@ body {
   padding: 0 14px;
   border-radius: 16px;
   font-size: 13px;
+}
+
+/* Sideways, the top of the screen is the HUD, so START sits at the bottom. */
+@media (orientation: landscape) {
+  #touch .start { top: auto; bottom: max(10px, env(safe-area-inset-bottom)); }
+}
+
+/* Phones held upright: put the game at the top, leave room for thumbs,
+   and suggest turning sideways for a bigger picture. */
+@media (orientation: portrait) and (pointer: coarse) {
+  body { flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 56px; box-sizing: border-box; }
+  body::after {
+    content: "Turn your phone sideways for a bigger screen";
+    color: #f0cf9a;
+    font: 14px monospace;
+    text-align: center;
+    width: 100%;
+    margin-top: 12px;
+  }
 }

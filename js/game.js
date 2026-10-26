@@ -938,16 +938,19 @@ function drawTitle() {
     drawCub(key, hop > 1 ? 'jump' : 'stand', i === 0 ? 1 : -1, cxm - 16, GROUND_Y - CAM_Y - 40 - Math.round(hop), { scale: 2 });
   });
 
-  if (Math.floor(game.frame / 30) % 2 === 0) {
+  if (!game.touch && Math.floor(game.frame / 30) % 2 === 0) {
     drawText(ctx, 'PRESS START', VIEW_W / 2, 190, { align: 'center', color: '#ffffff', shadow: '#2a1608' });
   }
-  const hint = Math.floor(game.frame / 240) % 2
-    ? 'PAD: STICK MOVE  A JUMP  X RUN'
-    : 'KEYS: ARROWS MOVE  Z JUMP  X RUN';
-  drawText(ctx, hint, VIEW_W / 2, 204, { align: 'center', color: '#ffe0a0', shadow: '#2a1608' });
+  // On touch screens the on-screen START button sits where this text would be.
+  if (!game.touch) {
+    const hint = Math.floor(game.frame / 240) % 2
+      ? 'PAD: STICK MOVE  A JUMP  X RUN'
+      : 'KEYS: ARROWS MOVE  Z JUMP  X RUN';
+    drawText(ctx, hint, VIEW_W / 2, 204, { align: 'center', color: '#ffe0a0', shadow: '#2a1608' });
+  }
   drawText(ctx, 'HI ' + pad(game.hi, 6), VIEW_W - 6, 4, { align: 'right', color: '#ffffff', shadow: '#2a1608' });
   if (!audio.ready) {
-    drawText(ctx, 'CLICK OR PRESS A KEY FOR SOUND', 6, 4, { color: '#ffffff', shadow: '#2a1608' });
+    drawText(ctx, game.touch ? 'TAP A BUTTON FOR SOUND' : 'CLICK OR PRESS A KEY FOR SOUND', 6, 4, { color: '#ffffff', shadow: '#2a1608' });
   }
 }
 
@@ -994,7 +997,7 @@ function drawEnding() {
     const y = VIEW_H - ((game.frame * 0.6 + i * 37) % (VIEW_H + 20));
     drawText(ctx, '@', x, y, { color: RAINBOW[i % RAINBOW.length], shadow: null });
   }
-  if (game.t > 120 && Math.floor(game.frame / 30) % 2 === 0) {
+  if (!game.touch && game.t > 120 && Math.floor(game.frame / 30) % 2 === 0) {
     drawText(ctx, 'PRESS START', VIEW_W / 2, 194, { align: 'center', color: '#ffffff', shadow: '#2a1608' });
   }
 }
@@ -1025,15 +1028,23 @@ function setupTouch() {
   const el = document.getElementById('touch');
   if (!el || !window.matchMedia('(pointer: coarse)').matches) return;
   el.hidden = false;
-  el.querySelectorAll('[data-act]').forEach(btn => {
-    const act = btn.dataset.act;
-    const on = e => { e.preventDefault(); touch[act] = true; audio.unlock(); };
-    const off = e => { e.preventDefault(); touch[act] = false; };
-    btn.addEventListener('pointerdown', on);
-    btn.addEventListener('pointerup', off);
-    btn.addEventListener('pointercancel', off);
-    btn.addEventListener('pointerleave', off);
-  });
+  game.touch = true;
+  const buttons = [...el.querySelectorAll('[data-act]')];
+  // Work out which buttons are under each finger, so a thumb can slide
+  // between left and right without lifting, and several can be held at once.
+  const sync = e => {
+    e.preventDefault();
+    for (const b of buttons) touch[b.dataset.act] = false;
+    for (const t of e.touches) {
+      const hit = document.elementFromPoint(t.clientX, t.clientY);
+      const btn = hit && hit.closest('[data-act]');
+      if (btn) touch[btn.dataset.act] = true;
+    }
+    for (const b of buttons) b.classList.toggle('down', touch[b.dataset.act]);
+  };
+  for (const ev of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
+    document.addEventListener(ev, sync, { passive: false });
+  }
 }
 
 // Optional URL params for testing: ?world=2&cub=P&play
@@ -1047,7 +1058,8 @@ function boot() {
   resize();
   window.addEventListener('resize', resize);
   setupTouch();
-  for (const ev of ['keydown', 'pointerdown', 'touchstart']) {
+  // iOS only lets audio start from certain gestures, so listen for all of them.
+  for (const ev of ['keydown', 'pointerdown', 'touchstart', 'touchend', 'click']) {
     window.addEventListener(ev, () => audio.unlock(), { passive: true });
   }
   input.onGamepadConnected(() => toast('CONTROLLER CONNECTED!'));
