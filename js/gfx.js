@@ -52,6 +52,8 @@ export function flipH(src) {
   g.translate(src.width, 0);
   g.scale(-1, 1);
   g.drawImage(src, 0, 0);
+  // Reset so later drawing on this canvas (e.g. shirt letters) isn't mirrored.
+  g.setTransform(1, 0, 0, 1, 0, 0);
   return c;
 }
 
@@ -61,6 +63,7 @@ export function flipV(src) {
   g.translate(0, src.height);
   g.scale(1, -1);
   g.drawImage(src, 0, 0);
+  g.setTransform(1, 0, 0, 1, 0, 0);
   return c;
 }
 

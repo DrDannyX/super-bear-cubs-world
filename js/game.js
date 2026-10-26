@@ -9,6 +9,8 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
 const GRAVITY = 0.55, GRAVITY_HOLD = 0.24, MAX_FALL = 6.5;
+// The cub's own fall is a touch floatier, with extra hang time near the top of a jump.
+const PLAYER_FALL = 0.48, APEX_SPEED = 1.3, APEX_HANG = 0.5;
 const WALK = 1.5, ACCEL = 0.09, RUN_ACCEL = 0.13, FRICTION = 0.12, SKID = 0.25;
 const GROUND_Y = 12 * T;
 const SOLID = new Set(['#', 'B', '?', 'H', 'R', 'U', 'S', '[', ']', 'J']);
@@ -323,7 +325,9 @@ function updatePlayer() {
     audio.sfx('jump');
   }
   const holding = input.held('jump');
-  p.vy = Math.min(MAX_FALL, p.vy + (holding && p.vy < 0 ? GRAVITY_HOLD : GRAVITY));
+  let grav = holding && p.vy < 0 ? GRAVITY_HOLD : PLAYER_FALL;
+  if (!p.onGround && Math.abs(p.vy) < APEX_SPEED) grav *= APEX_HANG;
+  p.vy = Math.min(MAX_FALL, p.vy + grav);
 
   if (moveX(p)) p.vx = 0;
   const wasGround = p.onGround;
@@ -950,7 +954,7 @@ function drawTitle() {
   }
   drawText(ctx, 'HI ' + pad(game.hi, 6), VIEW_W - 6, 4, { align: 'right', color: '#ffffff', shadow: '#2a1608' });
   if (!audio.ready) {
-    drawText(ctx, game.touch ? 'TAP A BUTTON FOR SOUND' : 'CLICK OR PRESS A KEY FOR SOUND', 6, 4, { color: '#ffffff', shadow: '#2a1608' });
+    drawText(ctx, game.touch ? 'TAP ANYWHERE FOR SOUND' : 'CLICK OR PRESS A KEY FOR SOUND', 6, 4, { color: '#ffffff', shadow: '#2a1608' });
   }
 }
 
@@ -1059,9 +1063,14 @@ function boot() {
   window.addEventListener('resize', resize);
   setupTouch();
   // iOS only lets audio start from certain gestures, so listen for all of them.
-  for (const ev of ['keydown', 'pointerdown', 'touchstart', 'touchend', 'click']) {
-    window.addEventListener(ev, () => audio.unlock(), { passive: true });
+  for (const ev of ['keydown', 'mousedown', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'click']) {
+    window.addEventListener(ev, () => audio.unlock(), { passive: true, capture: true });
   }
+  // Coming back to the tab (or iOS ending an interruption) may need a nudge.
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) audio.unlock(); });
+  // Queue the title music now; it starts the moment sound is allowed
+  // (straight away where the browser permits autoplay).
+  audio.init();
   input.onGamepadConnected(() => toast('CONTROLLER CONNECTED!'));
   // Handy for poking at the game from the browser console.
   window.bearCubs = { game, get level() { return lvl; } };

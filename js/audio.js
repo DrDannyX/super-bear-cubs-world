@@ -134,10 +134,16 @@ class Chip {
     this.compiled = {};
   }
 
-  unlock() {
+  // Create the audio graph. Safe to call any time: until the player taps or
+  // presses a key the browser keeps it suspended, and queued music waits.
+  init() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
+      if (!AC) return false;
+      // 'ambient' tells Safari to follow the iPhone's silent switch.
+      if (navigator.audioSession) {
+        try { navigator.audioSession.type = 'ambient'; } catch { /* unsupported */ }
+      }
       this.ctx = new AC();
       const c = this.ctx;
       this.master = c.createGain();
@@ -156,7 +162,24 @@ class Chip {
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       setInterval(() => this.schedule(), 25);
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return true;
+  }
+
+  // Call from inside a user gesture. iOS also needs a sound started during the
+  // gesture, and its context can be 'interrupted' (not just 'suspended').
+  unlock() {
+    if (!this.init()) return;
+    if (this.ctx.state !== 'running') {
+      const p = this.ctx.resume();
+      if (p && p.catch) p.catch(() => {});
+    }
+    if (!this.primed) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+      src.connect(this.ctx.destination);
+      src.start(0);
+      this.primed = true;
+    }
   }
 
   get ready() {
@@ -219,14 +242,14 @@ class Chip {
   // ---- music
 
   playSong(name) {
-    if (!this.ctx) return;
+    if (!this.init()) return;
     if (this.song && this.song.name === name && this.song.loop) return;
     if (!this.compiled[name]) this.compiled[name] = compileSong(SONGS[name]);
     this.start(name, this.compiled[name], true);
   }
 
   playJingle(name) {
-    if (!this.ctx) return;
+    if (!this.init()) return;
     this.start(name, compileJingle(JINGLES[name]), false);
   }
 
